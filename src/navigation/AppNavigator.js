@@ -4,6 +4,10 @@ import {
 } from "react";
 
 import {
+  View,
+} from "react-native";
+
+import {
   NavigationContainer,
 } from "@react-navigation/native";
 
@@ -30,27 +34,72 @@ const Tab =
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({
-        route,
-      }) => ({
+      screenOptions={({ route }) => ({
         headerShown: false,
 
-        tabBarStyle: {
-          backgroundColor:
-            "#09090B",
-          borderTopColor:
-            "rgba(255,255,255,0.08)",
-        },
+        tabBarShowLabel: true,
+
+  tabBarStyle: {
+  position: "absolute",
+
+  left: 32,
+  right: 32,
+
+  bottom: 10,
+
+  height: 74,
+
+  borderTopWidth: 0,
+
+  borderRadius: 32,
+
+  backgroundColor:
+    "rgba(12,18,32,0.58)",
+
+  borderWidth: 1,
+
+  borderColor:
+    "rgba(255,255,255,0.05)",
+
+  overflow: "hidden",
+
+  paddingTop: 8,
+  paddingBottom: 2,
+
+  elevation: 0,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.18,
+  shadowRadius: 20,
+
+  shadowOffset: {
+    width: 0,
+    height: 8,
+  },
+},
 
         tabBarActiveTintColor:
-          "#7C4DFF",
+          "#1683FF",
 
         tabBarInactiveTintColor:
-          "#71717A",
+          "rgba(255,255,255,0.42)",
+
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "500",
+          marginTop: 2,
+        },
+
+        tabBarItemStyle: {
+          justifyContent:
+            "center",
+          alignItems:
+            "center",
+        },
 
         tabBarIcon: ({
+          focused,
           color,
-          size,
         }) => {
           let icon;
 
@@ -63,23 +112,76 @@ function MainTabs() {
 
             case "Schedule":
               icon =
-                "calendar";
+                "calendar-outline";
               break;
 
             case "Sleep":
-              icon = "moon";
+              icon =
+                "moon-outline";
               break;
 
             case "Settings":
               icon =
-                "settings";
+                "ellipsis-horizontal";
               break;
+
+            default:
+              icon =
+                "ellipse";
+          }
+
+          // Render-style active pill
+          if (
+            focused &&
+            route.name ===
+              "Home"
+          ) {
+            return (
+              <View
+                style={{
+                  width: 58,
+                  height: 32,
+                  borderRadius: 16,
+
+                  backgroundColor:
+                    "rgba(8,12,22,0.78)",
+
+                  borderWidth: 0.7,
+
+                  borderColor:
+                    "rgba(22,131,255,0.22)",
+
+                  justifyContent:
+                    "center",
+
+                  alignItems:
+                    "center",
+
+                  shadowColor:
+                    "#1683FF",
+
+                  shadowOpacity: 0.03,
+                  shadowRadius: 3,
+
+                  shadowOffset: {
+                    width: 0,
+                    height: 4,
+                  },
+                }}
+              >
+                <Ionicons
+                  name="home"
+                  size={19}
+                  color="#1683FF"
+                />
+              </View>
+            );
           }
 
           return (
             <Ionicons
               name={icon}
-              size={size}
+              size={25}
               color={color}
             />
           );
