@@ -169,7 +169,7 @@ export default function HomeScreen() {
               />
             </Svg>
 
-            {/* Knob — positioned relative to the SVG View, not the outer dialBox */}
+            {/* Knob — glass capsule, rotated tangent to the arc */}
             <View
               {...panResponder.panHandlers}
               style={[
@@ -177,7 +177,13 @@ export default function HomeScreen() {
                 { left: kx - 30, top: ky - 30 },
               ]}
             >
-              <View style={[styles.knob, { backgroundColor: "#FFF" }]} />
+              <View style={[
+                styles.knobCapsule,
+                { transform: [{ rotate: `${ARC_START + norm * ARC_SPAN}deg` }] },
+                isDragging ? styles.knobCapsuleActive : styles.knobCapsuleSolid,
+              ]}>
+                {isDragging && <View style={styles.knobShine} />}
+              </View>
             </View>
           </View>
 
@@ -295,9 +301,38 @@ const styles = StyleSheet.create({
   stepButton: { width: 58, height: 58, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center" },
   stepText:   { color: "#FFF", fontSize: 32 },
 
-  // 60×60 transparent hit area; knob dot centered inside
+  // 60×60 transparent hit area; capsule centered inside
   knobHitArea: { position: "absolute", width: 60, height: 60, justifyContent: "center", alignItems: "center" },
-  knob:        { width: knobSize, height: knobSize, borderRadius: knobSize / 2, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4, elevation: 6 },
+  knobCapsule: {
+    width: 14,
+    height: 36,
+    borderRadius: 7,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  // default: solid white pill
+  knobCapsuleSolid: {
+    backgroundColor: "#FFFFFF",
+  },
+  // active/dragging: glass effect
+  knobCapsuleActive: {
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.75)",
+  },
+  knobShine: {
+    position: "absolute",
+    top: 2,
+    left: 2,
+    right: 2,
+    height: "45%",
+    borderRadius: 5,
+    backgroundColor: "rgba(255,255,255,0.45)",
+  },
 
   statsCard:    { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 26, padding: 20, flexDirection: "row", marginBottom: 28 },
   statItem:     { flex: 1, flexDirection: "row", alignItems: "center" },
