@@ -120,8 +120,8 @@ function MainTabs() {
                 "moon-outline";
               break;
 
-            case "Settings":
-              icon =
+            case "More":
+            icon =
                 "ellipsis-horizontal";
               break;
 
@@ -210,11 +210,11 @@ function MainTabs() {
       />
 
       <Tab.Screen
-        name="Settings"
-        component={
-          SettingsScreen
-        }
-      />
+  name="More"
+  component={
+    SettingsScreen
+  }
+/>
     </Tab.Navigator>
   );
 }
