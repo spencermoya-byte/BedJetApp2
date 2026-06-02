@@ -29,14 +29,18 @@ const ARC_START = 130;
 const ARC_SPAN  = 280;
 const ARC_END   = ARC_START + ARC_SPAN; // 410
 
-const MIN_TEMP = 60;
-const MAX_TEMP = 95;
+const MODE_TEMPS = {
+  cool:  { min: 60, max: 80  },
+  dry:   { min: 60, max: 85  },
+  turbo: { min: 60, max: 109 },
+  off:   { min: 60, max: 95  },
+};
 
 const circumference    = 2 * Math.PI * radius;
 const visibleArcLength = circumference * (ARC_SPAN / 360);
 
-function tempToNorm(t)  { return (t - MIN_TEMP) / (MAX_TEMP - MIN_TEMP); }
-function normToTemp(n)  { return Math.round(MIN_TEMP + n * (MAX_TEMP - MIN_TEMP)); }
+function tempToNorm(t, min, max) { return (t - min) / (max - min); }
+function normToTemp(n, min, max) { return Math.round(min + n * (max - min)); }
 
 // Knob x/y relative to the SVG element's top-left corner
 function knobPos(norm) {
@@ -57,7 +61,8 @@ export default function HomeScreen() {
   // We measure the SVG's on-screen position via onLayout so the touch math is exact.
   const [svgLayout, setSvgLayout] = useState(null);
 
-  const norm = tempToNorm(temperature);
+  const { min: MIN_TEMP, max: MAX_TEMP } = MODE_TEMPS[mode];
+  const norm = tempToNorm(temperature, MIN_TEMP, MAX_TEMP);
   const { x: kx, y: ky } = knobPos(norm);
 
   const accent =
@@ -67,22 +72,13 @@ export default function HomeScreen() {
 
   function applyTouch(touchX, touchY) {
     if (!svgLayout) return;
-
-    // Translate screen coords to SVG-local coords
     const dx = touchX - (svgLayout.x + center);
     const dy = touchY - (svgLayout.y + center);
-
-    // atan2 with y-down gives CW angle from right — same convention as SVG rotation
     let angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-    // Shift into [ARC_START, ARC_END] = [130, 410]
     if (angleDeg < ARC_START) angleDeg += 360;
-
-    // Clamp to the arc
     angleDeg = Math.max(ARC_START, Math.min(ARC_END, angleDeg));
-
     const n = (angleDeg - ARC_START) / ARC_SPAN;
-    setTemperature(normToTemp(n));
+    setTemperature(normToTemp(n, MIN_TEMP, MAX_TEMP));
   }
 
   const panResponder = PanResponder.create({
@@ -96,6 +92,12 @@ export default function HomeScreen() {
 
   function adjustTemp(delta) {
     setTemperature(t => Math.max(MIN_TEMP, Math.min(MAX_TEMP, t + delta)));
+  }
+
+  function switchMode(newMode) {
+    const { min, max } = MODE_TEMPS[newMode];
+    setTemperature(t => Math.max(min, Math.min(max, t)));
+    setMode(newMode);
   }
 
   const modeLabel =
@@ -224,7 +226,7 @@ export default function HomeScreen() {
             return (
               <TouchableOpacity
                 key={item.key}
-                onPress={() => setMode(item.key)}
+                onPress={() => switchMode(item.key)}
                 style={[
                   styles.modeCard,
                   active && { borderWidth: 1, borderColor: accent, backgroundColor: `${accent}15` },
