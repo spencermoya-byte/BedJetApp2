@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useEffect,
+} from "react";
 import {
   View,
   Text,
@@ -99,6 +102,7 @@ export default function HomeScreen() {
   calmMode,
   highContrast,
 } = useAppearance();
+
 const isFahrenheit =
   temperatureUnit === "F" ||
   temperatureUnit === "f" ||
@@ -109,14 +113,44 @@ const MODE_TEMPS =
     isFahrenheit
   );
 
-  const [temperature, setTemperature] = useState(72);
+  const [
+  temperature,
+  setTemperature,
+] = useState(72);
+
+useEffect(() => {
+  setTemperature(
+    (prev) => {
+      const converted =
+        isFahrenheit
+          ? Math.round(
+              (prev * 9) /
+                5 +
+                32
+            )
+          : Number(
+              (
+                ((prev -
+                  32) *
+                  5) /
+                9
+              ).toFixed(1)
+            );
+
+      return converted;
+    }
+  );
+}, [
+  isFahrenheit,
+]);
+
   const [fanSpeed,    setFanSpeed]    = useState(55);
   const [mode,        setMode]        = useState("cool");
   const [isDragging,  setIsDragging]  = useState(false);
   const [svgLayout,   setSvgLayout]   = useState(null);
 
   const { min: MIN_TEMP, max: MAX_TEMP } = MODE_TEMPS[mode];
-  const safeTemp =
+  const clampedTemp =
   Math.max(
     MIN_TEMP,
     Math.min(
@@ -127,11 +161,47 @@ const MODE_TEMPS =
 
 const norm =
   tempToNorm(
-    safeTemp,
+    clampedTemp,
     MIN_TEMP,
     MAX_TEMP
   );
-  const { x: kx, y: ky } = knobPos(norm);
+
+const {
+  x: kx,
+  y: ky,
+} = knobPos(norm);
+
+useEffect(() => {
+  setTemperature(
+    (prev) => {
+      const converted =
+        isFahrenheit
+          ? Math.round(
+              (prev * 9) /
+                5 +
+                32
+            )
+          : Number(
+              (
+                ((prev -
+                  32) *
+                  5) /
+                9
+              ).toFixed(1)
+            );
+
+      return Math.max(
+        MIN_TEMP,
+        Math.min(
+          MAX_TEMP,
+          converted
+        )
+      );
+    }
+  );
+}, [
+  isFahrenheit,
+]);
 
   const modeAccent =
   mode === "cool"
