@@ -1,13 +1,10 @@
 import AppNavigator from "./src/navigation/AppNavigator";
-
-import {
-  ThemeProvider,
-} from "./src/hooks/ThemeContext";
+import { AppearanceProvider } from "./src/context/AppearanceContext";
 
 export default function App() {
   return (
-    <ThemeProvider>
+    <AppearanceProvider>
       <AppNavigator />
-    </ThemeProvider>
+    </AppearanceProvider>
   );
 }

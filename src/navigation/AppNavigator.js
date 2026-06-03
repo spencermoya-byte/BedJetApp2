@@ -1,22 +1,29 @@
-import {
-  // useEffect,
-  // useState,
-} from "react";
-
 import { View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 
-import HomeScreen from "../screens/HomeScreen";
-import ScheduleScreen from "../screens/ScheduleScreen";
-import SleepScreen from "../screens/SleepScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+import HomeScreen       from "../screens/HomeScreen";
+import ScheduleScreen   from "../screens/ScheduleScreen";
+import SleepScreen      from "../screens/SleepScreen";
+import SettingsScreen   from "../screens/SettingsScreen";
+import AppearanceScreen from "../screens/AppearanceScreen";
 
 // import PairingScreen from "../screens/pairing/PairingScreen";
 // import { storageService } from "../services/storage/storageService";
 
-const Tab = createBottomTabNavigator();
+const Tab       = createBottomTabNavigator();
+const MoreStack = createNativeStackNavigator();
+
+function MoreStackScreen() {
+  return (
+    <MoreStack.Navigator screenOptions={{ headerShown: false }}>
+      <MoreStack.Screen name="Settings"   component={SettingsScreen} />
+      <MoreStack.Screen name="Appearance" component={AppearanceScreen} />
+    </MoreStack.Navigator>
+  );
+}
 
 function MainTabs() {
   return (
@@ -80,7 +87,7 @@ function MainTabs() {
       <Tab.Screen name="Home"     component={HomeScreen} />
       <Tab.Screen name="Schedule" component={ScheduleScreen} />
       <Tab.Screen name="Sleep"    component={SleepScreen} />
-      <Tab.Screen name="More"     component={SettingsScreen} />
+      <Tab.Screen name="More"     component={MoreStackScreen} />
     </Tab.Navigator>
   );
 }
