@@ -26,12 +26,55 @@ const ARC_START = 130;
 const ARC_SPAN  = 280;
 const ARC_END   = ARC_START + ARC_SPAN;
 
-const MODE_TEMPS = {
-  cool:  { min: 60, max: 80  },
-  dry:   { min: 60, max: 85  },
-  turbo: { min: 60, max: 109 },
-  off:   { min: 60, max: 95  },
-};
+function getModeTemps(
+  isFahrenheit
+) {
+  return {
+    cool: {
+      min:
+        isFahrenheit
+          ? 60
+          : 16,
+      max:
+        isFahrenheit
+          ? 80
+          : 26.7,
+    },
+
+    dry: {
+      min:
+        isFahrenheit
+          ? 60
+          : 16,
+      max:
+        isFahrenheit
+          ? 85
+          : 29.4,
+    },
+
+    turbo: {
+      min:
+        isFahrenheit
+          ? 60
+          : 16,
+      max:
+        isFahrenheit
+          ? 109
+          : 42.8,
+    },
+
+    off: {
+      min:
+        isFahrenheit
+          ? 60
+          : 16,
+      max:
+        isFahrenheit
+          ? 95
+          : 35,
+    },
+  };
+}
 
 const circumference    = 2 * Math.PI * radius;
 const visibleArcLength = circumference * (ARC_SPAN / 360);
@@ -46,7 +89,25 @@ function knobPos(norm) {
 }
 
 export default function HomeScreen() {
-  const { reduceVisualNoise } = useAppearance();
+  const {
+  accent,
+  colors,
+  temperatureUnit,
+  reduceVisualNoise,
+  reduceMotion,
+  reduceGlow,
+  calmMode,
+  highContrast,
+} = useAppearance();
+const isFahrenheit =
+  temperatureUnit === "F" ||
+  temperatureUnit === "f" ||
+  temperatureUnit === "fahrenheit";
+
+const MODE_TEMPS =
+  getModeTemps(
+    isFahrenheit
+  );
 
   const [temperature, setTemperature] = useState(72);
   const [fanSpeed,    setFanSpeed]    = useState(55);
@@ -55,13 +116,31 @@ export default function HomeScreen() {
   const [svgLayout,   setSvgLayout]   = useState(null);
 
   const { min: MIN_TEMP, max: MAX_TEMP } = MODE_TEMPS[mode];
-  const norm = tempToNorm(temperature, MIN_TEMP, MAX_TEMP);
+  const safeTemp =
+  Math.max(
+    MIN_TEMP,
+    Math.min(
+      MAX_TEMP,
+      temperature
+    )
+  );
+
+const norm =
+  tempToNorm(
+    safeTemp,
+    MIN_TEMP,
+    MAX_TEMP
+  );
   const { x: kx, y: ky } = knobPos(norm);
 
-  const accent =
-    mode === "cool"  ? "#1683FF" :
-    mode === "turbo" ? "#F59E0B" :
-    mode === "dry"   ? "#38BDF8" : "#6B7280";
+  const modeAccent =
+  mode === "cool"
+    ? "#1683FF"
+    : mode === "turbo"
+    ? "#F59E0B"
+    : mode === "dry"
+    ? "#38BDF8"
+    : "#6B7280";
 
   function applyTouch(touchX, touchY) {
     if (!svgLayout) return;
@@ -152,7 +231,7 @@ export default function HomeScreen() {
             <Svg width={dialSize} height={dialSize}>
               <Circle
                 cx={center} cy={center} r={radius}
-                stroke={accent}
+                stroke={modeAccent}
                 strokeWidth={strokeWidth}
                 fill="none"
                 strokeDasharray={[visibleArcLength * norm, circumference]}
@@ -177,10 +256,10 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.dialContent} pointerEvents="none">
-            <MaterialCommunityIcons name={modeIcon} size={42} color={accent} />
+            <MaterialCommunityIcons name={modeIcon} size={42} color={modeAccent} />
             {/* RVN: hide mode label text */}
             {!reduceVisualNoise && (
-              <Text style={[styles.modeLabel, { color: accent }]}>{modeLabel}</Text>
+              <Text style={[styles.modeLabel, { color: modeAccent }]}>{modeLabel}</Text>
             )}
             <Text style={styles.temp}>{temperature}°</Text>
             {/* RVN: hide "Target Temperature" sub-label */}
@@ -235,10 +314,10 @@ export default function HomeScreen() {
                 style={[
                   styles.modeCard,
                   reduceVisualNoise && styles.modeCardCompact,
-                  active && { borderWidth: 1, borderColor: accent, backgroundColor: `${accent}15` },
+                  active && { borderWidth: 1, borderColor: modeAccent, backgroundColor: `${modeAccent}15` },
                 ]}
               >
-                <MaterialCommunityIcons name={item.icon} size={28} color={active ? accent : "#7C8295"} />
+                <MaterialCommunityIcons name={item.icon} size={28} color={active ? modeAccent : "#7C8295"} />
                 {/* RVN: hide mode card text labels */}
                 {!reduceVisualNoise && (
                   <Text style={[styles.modeCardText, active && styles.modeCardTextActive]}>
@@ -254,15 +333,15 @@ export default function HomeScreen() {
         <View style={styles.fanCard}>
           {!reduceVisualNoise && (
             <View style={styles.fanHeader}>
-              <MaterialCommunityIcons name="fan" size={28} color={accent} />
+              <MaterialCommunityIcons name="fan" size={28} color={modeAccent} />
               <Text style={styles.fanTitle}>Fan Speed</Text>
             </View>
           )}
           <Slider
             minimumValue={0} maximumValue={100} value={fanSpeed}
-            minimumTrackTintColor={accent}
+            minimumTrackTintColor={modeAccent}
             maximumTrackTintColor="rgba(255,255,255,0.12)"
-            thumbTintColor={accent}
+            thumbTintColor={modeAccent}
             onValueChange={(v) => setFanSpeed(Math.round(v))}
           />
           {!reduceVisualNoise && (

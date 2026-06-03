@@ -1,5 +1,6 @@
 import React, {
   useState,
+  useEffect,
 } from "react";
 
 import {
@@ -26,14 +27,50 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 
+import {
+  useAppearance,
+} from "../context/AppearanceContext";
+
 export default function ClimatePreferencesScreen() {
   const navigation =
     useNavigation();
 
-  const [
-    fahrenheit,
-    setFahrenheit,
-  ] = useState(true);
+  const {
+  temperatureUnit,
+  setTemperatureUnit,
+  accent,
+  colors,
+} = useAppearance();
+
+useEffect(() => {
+  setTurboLimit(
+    temperatureUnit ===
+      "F"
+      ? 109
+      : 43
+  );
+}, [
+  temperatureUnit,
+]);
+
+const isFahrenheit =
+  temperatureUnit ===
+  "F";
+
+const turboMin =
+  isFahrenheit
+    ? 60
+    : 16;
+
+const turboMax =
+  isFahrenheit
+    ? 109
+    : 43;
+
+const displaySymbol =
+  isFahrenheit
+    ? "°F"
+    : "°C";
 
   const [
     rememberLast,
@@ -59,9 +96,6 @@ export default function ClimatePreferencesScreen() {
     turboLimit,
     setTurboLimit,
   ] = useState(109);
-
-  const accent =
-    "#1683FF";
 
   const modes = [
     "cool",
@@ -145,62 +179,66 @@ export default function ClimatePreferencesScreen() {
           }
         >
           <SettingRow
-            title="Temperature Unit"
-            subtitle="Choose between Fahrenheit and Celsius"
-            right={
-              <View
-                style={
-                  styles.segment
-                }
-              >
-                <TouchableOpacity
-                  onPress={() =>
-                    setFahrenheit(
-                      true
-                    )
-                  }
-                  style={[
-                    styles.segmentButton,
-                    fahrenheit &&
-                      styles.segmentActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      fahrenheit &&
-                        styles.segmentTextActive,
-                    ]}
-                  >
-                    °F
-                  </Text>
-                </TouchableOpacity>
+  title="Temperature Unit"
+  subtitle="Choose between Fahrenheit and Celsius"
+  right={
+    <View
+      style={
+        styles.segment
+      }
+    >
+      <TouchableOpacity
+        onPress={() =>
+          setTemperatureUnit(
+            "F"
+          )
+        }
+        style={[
+          styles.segmentButton,
+          temperatureUnit ===
+            "F" &&
+            styles.segmentActive,
+        ]}
+      >
+        <Text
+          style={[
+            styles.segmentText,
+            temperatureUnit ===
+              "F" &&
+              styles.segmentTextActive,
+          ]}
+        >
+          °F
+        </Text>
+      </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() =>
-                    setFahrenheit(
-                      false
-                    )
-                  }
-                  style={[
-                    styles.segmentButton,
-                    !fahrenheit &&
-                      styles.segmentActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      !fahrenheit &&
-                        styles.segmentTextActive,
-                    ]}
-                  >
-                    °C
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            }
-          />
+      <TouchableOpacity
+        onPress={() =>
+          setTemperatureUnit(
+            "C"
+          )
+        }
+        style={[
+          styles.segmentButton,
+          temperatureUnit ===
+            "C" &&
+            styles.segmentActive,
+        ]}
+      >
+        <Text
+          style={[
+            styles.segmentText,
+            temperatureUnit ===
+              "C" &&
+              styles.segmentTextActive,
+          ]}
+        >
+          °C
+        </Text>
+      </TouchableOpacity>
+    </View>
+  }
+/>
 
           <SettingRow
             title="Remember Last Settings"

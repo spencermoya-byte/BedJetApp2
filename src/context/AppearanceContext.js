@@ -13,8 +13,8 @@ export function AppearanceProvider({ children }) {
   const [calmMode,          setCalmMode]           = useState(false);
   const [highContrast,      setHighContrast]       = useState(false);
   const [accentColor,       setAccentColor]        = useState("blue");
-
-  // Resolve the actual active scheme
+  const [temperatureUnit,   setTemperatureUnit]    = useState("F");
+    // Resolve the actual active scheme
   const resolvedTheme =
     theme === "system"
       ? (systemScheme ?? "dark")
@@ -79,6 +79,7 @@ export function AppearanceProvider({ children }) {
     <AppearanceContext.Provider value={{
       // Settings
       theme, setTheme,
+      temperatureUnit, setTemperatureUnit,
       reduceMotion, setReduceMotion,
       reduceGlow, setReduceGlow,
       reduceVisualNoise, setReduceVisualNoise,
