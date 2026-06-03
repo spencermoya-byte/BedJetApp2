@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAppearance } from "../context/AppearanceContext";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Polyline, Circle as SvgCircle } from "react-native-svg";
 
@@ -102,6 +103,7 @@ const INITIAL_SCHEDULES = [
 ];
 
 export default function ScheduleScreen() {
+  const { reduceVisualNoise } = useAppearance();
   const [activePreset, setActivePreset] = useState("sleep");
   const [schedules, setSchedules]       = useState(INITIAL_SCHEDULES);
 
@@ -133,11 +135,15 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.subtitle}>
-          Automate your BedJet climate{"\n"}throughout the night or day.
-        </Text>
+        {!reduceVisualNoise && (
+          <Text style={styles.subtitle}>
+            Automate your BedJet climate{"\n"}throughout the night or day.
+          </Text>
+        )}
 
-        {/* ── Quick Presets ── */}
+        {/* ── Quick Presets — hidden in RVN ── */}
+        {!reduceVisualNoise && (
+        <>
         <Text style={styles.sectionTitle}>Quick Presets</Text>
         <View style={styles.presetsRow}>
           {PRESETS.map(p => {
@@ -171,6 +177,8 @@ export default function ScheduleScreen() {
             );
           })}
         </View>
+        </>
+        )}
 
         {/* ── My Schedules header ── */}
         <View style={styles.schedulesHeader}>
@@ -210,8 +218,8 @@ export default function ScheduleScreen() {
                   />
                 </View>
 
-                {/* Sparkline chart */}
-                <View style={styles.sparkWrap}>
+                {/* Sparkline chart — hidden in RVN */}
+                {!reduceVisualNoise && <View style={styles.sparkWrap}>
                   <View style={styles.sparkTempLabels}>
                     <Text style={styles.sparkTempLabel}>72°</Text>
                     <Text style={[styles.sparkTempLabel, { color: "#F59E0B", marginLeft: "auto" }]}>Warm</Text>
@@ -255,10 +263,10 @@ export default function ScheduleScreen() {
                       <Text key={i} style={styles.sparkLabel}>{l}</Text>
                     ))}
                   </View>
-                </View>
+                </View>}
 
-                {/* Stats row */}
-                <View style={styles.statsRow}>
+                {/* Stats row — hidden in RVN */}
+                {!reduceVisualNoise && <View style={styles.statsRow}>
                   {item.stats.map((s, i) => (
                     <React.Fragment key={i}>
                       {i > 0 && <View style={styles.statsDivider} />}
@@ -271,7 +279,7 @@ export default function ScheduleScreen() {
                   <TouchableOpacity style={styles.statsArrow}>
                     <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
                   </TouchableOpacity>
-                </View>
+                </View>}
               </>
             ) : (
               // Collapsed card
@@ -281,8 +289,8 @@ export default function ScheduleScreen() {
                 </View>
                 <View style={styles.cardMeta}>
                   <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.cardSub}>{item.subtitle}</Text>
-                  <Text style={styles.cardTime}>{item.time}</Text>
+                  {!reduceVisualNoise && <Text style={styles.cardSub}>{item.subtitle}</Text>}
+                  {!reduceVisualNoise && <Text style={styles.cardTime}>{item.time}</Text>}
                 </View>
                 <Switch
                   value={item.enabled}
@@ -299,8 +307,8 @@ export default function ScheduleScreen() {
           </View>
         ))}
 
-        {/* ── Footer note ── */}
-        <View style={styles.footerNote}>
+        {/* ── Footer note — hidden in RVN ── */}
+        {!reduceVisualNoise && <View style={styles.footerNote}>
           <MaterialCommunityIcons name="calendar-multiselect" size={28} color="rgba(255,255,255,0.3)" />
           <View style={{ marginLeft: 14, flex: 1 }}>
             <Text style={styles.footerTitle}>Schedules run automatically</Text>
@@ -308,7 +316,7 @@ export default function ScheduleScreen() {
               BedJet will follow your plan and adjust temperature, fan speed, and mode.
             </Text>
           </View>
-        </View>
+        </View>}
 
       </ScrollView>
     </View>
