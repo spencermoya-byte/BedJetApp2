@@ -158,63 +158,197 @@ export default function AppearanceScreen() {
         )}
 
         {/* ── Accessibility ── */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCESSIBILITY</Text>
-        <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-          <ToggleRow
-            icon="run-fast"
-            iconColor="#60A5FA"
-            iconBg="rgba(96,165,250,0.12)"
-            title="Reduce Motion"
-            subtitle="Less bouncing, sliding, and animation throughout the app"
-            tags={["ADHD", "Sensory", "Nighttime"]}
-            value={reduceMotion}
-            onValueChange={setReduceMotion}
-            accent={accent}
-            colors={colors}
-          />
-          <ToggleRow
-            icon="lightbulb-outline"
-            iconColor="#FCD34D"
-            iconBg="rgba(252,211,77,0.10)"
-            title="Reduce Glow"
-            subtitle="Softer highlights, less neon, muted accents"
-            tags={["Night use", "Eye strain"]}
-            value={reduceGlow}
-            onValueChange={setReduceGlow}
-            accent={accent}
-            colors={colors}
-          />
-          <ToggleRow
-            icon="eye-outline"
-            iconColor="#34D399"
-            iconBg="rgba(52,211,153,0.10)"
-            title="Reduce Visual Noise"
-            subtitle="Fewer labels, cleaner cards, less visual density"
-            tags={["ADHD", "Focus"]}
-            value={reduceVisualNoise}
-            onValueChange={setReduceVisualNoise}
-            accent={accent}
-            colors={colors}
-          />
-          <ToggleRow
-            icon="contrast-circle"
-            iconColor="#E2E8F0"
-            iconBg="rgba(226,232,240,0.10)"
-            title="High Contrast"
-            subtitle="Stronger text contrast and clearer boundaries"
-            tags={["Vision", "Readability"]}
-            value={highContrast}
-            onValueChange={setHighContrast}
-            accent={accent}
-            colors={colors}
-            isLast
-          />
-        </View>
+<Text
+  style={[
+    styles.sectionLabel,
+    {
+      color:
+        colors.textMuted,
+    },
+  ]}
+>
+  ACCESSIBILITY
+</Text>
 
-      </ScrollView>
+<View
+  style={[
+    styles.group,
+    {
+      backgroundColor:
+        colors.card,
+      borderColor:
+        colors.cardBorder,
+    },
+  ]}
+>
+  <ToggleRow
+    icon="run-fast"
+    iconColor="#60A5FA"
+    iconBg="rgba(96,165,250,0.12)"
+    title="Reduce Motion"
+    subtitle="Less bouncing, sliding, and animation throughout the app"
+    tags={[
+      "ADHD",
+      "Sensory",
+      "Nighttime",
+    ]}
+    value={
+      reduceMotion
+    }
+    onValueChange={
+      setReduceMotion
+    }
+    accent={
+      accent
+    }
+    colors={
+      colors
+    }
+  />
+
+  <ToggleRow
+    icon="lightbulb-outline"
+    iconColor="#FCD34D"
+    iconBg="rgba(252,211,77,0.10)"
+    title="Reduce Glow"
+    subtitle="Softer highlights, less neon, muted accents"
+    tags={[
+      "Night use",
+      "Eye strain",
+    ]}
+    value={
+      reduceGlow
+    }
+    onValueChange={
+      setReduceGlow
+    }
+    accent={
+      accent
+    }
+    colors={
+      colors
+    }
+  />
+
+  <ToggleRow
+    icon="eye-outline"
+    iconColor="#34D399"
+    iconBg="rgba(52,211,153,0.10)"
+    title="Reduce Visual Noise"
+    subtitle="Fewer labels, cleaner cards, less visual density"
+    tags={[
+      "ADHD",
+      "Focus",
+    ]}
+    value={
+      reduceVisualNoise
+    }
+    onValueChange={
+      setReduceVisualNoise
+    }
+    accent={
+      accent
+    }
+    colors={
+      colors
+    }
+  />
+
+  <ToggleRow
+    icon="contrast-circle"
+    iconColor="#E2E8F0"
+    iconBg="rgba(226,232,240,0.10)"
+    title="High Contrast"
+    subtitle="Stronger text contrast and clearer boundaries"
+    tags={[
+      "Vision",
+      "Readability",
+    ]}
+    value={
+      highContrast
+    }
+    onValueChange={
+      setHighContrast
+    }
+    accent={
+      accent
+    }
+    colors={
+      colors
+    }
+  />
+
+  {/* ADD THIS HERE */}
+  <TouchableOpacity
+    style={[
+      styles.row,
+    ]}
+    activeOpacity={
+      0.75
+    }
+  >
+    <View
+      style={[
+        styles.iconWrap,
+        {
+          backgroundColor:
+            "rgba(96,165,250,0.12)",
+        },
+      ]}
+    >
+      <MaterialCommunityIcons
+        name="palette-outline"
+        size={21}
+        color="#60A5FA"
+      />
     </View>
-  );
+
+    <View
+      style={
+        styles.rowText
+      }
+    >
+      <Text
+        style={[
+          styles.rowTitle,
+          {
+            color:
+              colors.text,
+          },
+        ]}
+      >
+        Accent Color
+      </Text>
+
+      <Text
+        style={[
+          styles.rowSubtitle,
+          {
+            color:
+              colors.textMuted,
+          },
+        ]}
+      >
+        Customize the app accent color
+      </Text>
+    </View>
+
+    <Ionicons
+      name="chevron-forward"
+      size={18}
+      color={
+        colors.textMuted
+      }
+    />
+  </TouchableOpacity>
+
+</View>
+
+</ScrollView>
+</View>
+);
 }
+
 
 function ToggleRow({ icon, iconColor, iconBg, title, subtitle, tags, value, onValueChange, accent, colors, isLast }) {
   return (

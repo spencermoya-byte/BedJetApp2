@@ -4,11 +4,11 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 
-import HomeScreen       from "../screens/HomeScreen";
-import ScheduleScreen   from "../screens/ScheduleScreen";
-import SleepScreen      from "../screens/SleepScreen";
-import SettingsScreen   from "../screens/SettingsScreen";
+import HomeScreen from "../screens/HomeScreen";
+import ScheduleScreen from "../screens/ScheduleScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 import AppearanceScreen from "../screens/AppearanceScreen";
+import ClimatePreferencesScreen from "../screens/ClimatePreferencesScreen";
 
 // import PairingScreen from "../screens/pairing/PairingScreen";
 // import { storageService } from "../services/storage/storageService";
@@ -18,15 +18,33 @@ const MoreStack = createNativeStackNavigator();
 
 function MoreStackScreen() {
   return (
-    <MoreStack.Navigator screenOptions={{ headerShown: false }}>
-      <MoreStack.Screen
-  name="SettingsHome"
-  component={
-    SettingsScreen
-  }
-/>
-      <MoreStack.Screen name="Appearance" component={AppearanceScreen} />
-    </MoreStack.Navigator>
+    <MoreStack.Navigator
+  screenOptions={{
+    headerShown:
+      false,
+  }}
+>
+  <MoreStack.Screen
+    name="SettingsHome"
+    component={
+      SettingsScreen
+    }
+  />
+
+  <MoreStack.Screen
+    name="Appearance"
+    component={
+      AppearanceScreen
+    }
+  />
+
+  <MoreStack.Screen
+    name="ClimatePreferences"
+    component={
+      ClimatePreferencesScreen
+    }
+  />
+</MoreStack.Navigator>
   );
 }
 

@@ -10,85 +10,173 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
+// REPLACE ENTIRE SETTINGS_GROUPS WITH THIS
+
 const SETTINGS_GROUPS = [
   {
-    key: "prefs",
+    key: "preferences",
     items: [
       {
-        key: "climate",
-        icon: "thermometer",
-        iconColor: "#60A5FA",
-        iconBg: "rgba(96,165,250,0.12)",
-        title: "Climate Preferences",
-        subtitle: "Default settings and comfort preferences",
-      },
+  key:
+    "climate",
+  icon:
+    "thermometer",
+  iconColor:
+    "#60A5FA",
+  iconBg:
+    "rgba(96,165,250,0.12)",
+  title:
+    "Climate Preferences",
+  subtitle:
+    "Default settings and comfort preferences",
+  screen:
+    "ClimatePreferences",
+},
       {
         key: "schedule",
-        icon: "calendar-month-outline",
+        icon:
+          "calendar-month-outline",
         iconColor: "#818CF8",
-        iconBg: "rgba(129,140,248,0.12)",
-        title: "Schedule Preferences",
-        subtitle: "Control how schedules behave",
+        iconBg:
+          "rgba(129,140,248,0.12)",
+        title:
+          "Schedule Preferences",
+        subtitle:
+          "Control how schedules behave",
       },
       {
-        key: "notifications",
-        icon: "bell-outline",
-        iconColor: "#A4A8B8",
-        iconBg: "rgba(164,168,184,0.10)",
-        title: "Notifications",
-        subtitle: "Choose what you want to be notified about",
+        key:
+          "notifications",
+        icon:
+          "bell-outline",
+        iconColor:
+          "#A4A8B8",
+        iconBg:
+          "rgba(164,168,184,0.10)",
+        title:
+          "Notifications",
+        subtitle:
+          "Choose what you want to be notified about",
       },
       {
-        key: "appearance",
-        icon: "clock-outline",
-        iconColor: "#A4A8B8",
-        iconBg: "rgba(164,168,184,0.10)",
-        title: "Appearance",
-        subtitle: "Theme, motion, and visual options",
-        screen: "Appearance",
+        key:
+          "appearance",
+        icon:
+          "palette-outline",
+        iconColor:
+          "#A78BFA",
+        iconBg:
+          "rgba(167,139,250,0.10)",
+        title:
+          "Appearance",
+        subtitle:
+          "Theme, motion, and visual options",
+        screen:
+          "Appearance",
       },
       {
-        key: "accessibility",
-        icon: "human",
-        iconColor: "#A4A8B8",
-        iconBg: "rgba(164,168,184,0.10)",
-        title: "Accessibility",
-        subtitle: "Make the app work best for you",
+        key:
+          "accessibility",
+        icon:
+          "human",
+        iconColor:
+          "#34D399",
+        iconBg:
+          "rgba(52,211,153,0.10)",
+        title:
+          "Accessibility",
+        subtitle:
+          "Make the app easier to read, use, and focus on",
       },
     ],
   },
+
+  {
+    key: "reliability",
+    items: [
+      {
+        key:
+          "heating",
+        icon:
+          "radiator",
+        iconColor:
+          "#F59E0B",
+        iconBg:
+          "rgba(245,158,11,0.10)",
+        title:
+          "Heating Reliability",
+        subtitle:
+          "Monitor heating performance and prevent cool-air output",
+      },
+    ],
+  },
+
   {
     key: "device",
     items: [
       {
-        key: "device",
-        icon: "monitor-small",
-        iconColor: "#A4A8B8",
-        iconBg: "rgba(164,168,184,0.10)",
-        title: "Device",
-        subtitle: "Updates, actions, and device settings",
+        key:
+          "device",
+        icon:
+          "monitor-small",
+        iconColor:
+          "#A4A8B8",
+        iconBg:
+          "rgba(164,168,184,0.10)",
+        title:
+          "Device",
+        subtitle:
+          "Updates, actions, and device settings",
       },
       {
-        key: "about",
-        icon: "information-outline",
-        iconColor: "#A4A8B8",
-        iconBg: "rgba(164,168,184,0.10)",
-        title: "About",
-        subtitle: "App info, support, and legal",
+        key:
+          "advanced",
+        icon:
+          "tools",
+        iconColor:
+          "#94A3B8",
+        iconBg:
+          "rgba(148,163,184,0.10)",
+        title:
+          "Advanced",
+        subtitle:
+          "Diagnostics, logs, resets, and developer tools",
+      },
+      {
+        key:
+          "about",
+        icon:
+          "information-outline",
+        iconColor:
+          "#A4A8B8",
+        iconBg:
+          "rgba(164,168,184,0.10)",
+        title:
+          "About",
+        subtitle:
+          "App info, support, and legal",
       },
     ],
   },
+
   {
     key: "danger",
     items: [
       {
-        key: "reset",
-        icon: "delete-outline",
-        iconColor: "#EF4444",
-        iconBg: "rgba(239,68,68,0.10)",
-        title: "Factory Reset",
-        subtitle: "Remove BedJet from your account",
-        titleColor: "#EF4444",
+        key:
+          "reset",
+        icon:
+          "delete-outline",
+        iconColor:
+          "#EF4444",
+        iconBg:
+          "rgba(239,68,68,0.10)",
+        title:
+          "Factory Reset",
+        subtitle:
+          "Remove BedJet from your account",
+        titleColor:
+          "#EF4444",
       },
     ],
   },
