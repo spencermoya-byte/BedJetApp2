@@ -19,7 +19,12 @@ const MoreStack = createNativeStackNavigator();
 function MoreStackScreen() {
   return (
     <MoreStack.Navigator screenOptions={{ headerShown: false }}>
-      <MoreStack.Screen name="Settings"   component={SettingsScreen} />
+      <MoreStack.Screen
+  name="SettingsHome"
+  component={
+    SettingsScreen
+  }
+/>
       <MoreStack.Screen name="Appearance" component={AppearanceScreen} />
     </MoreStack.Navigator>
   );
@@ -60,8 +65,11 @@ function MainTabs() {
           switch (route.name) {
             case "Home":     icon = "home"; break;
             case "Schedule": icon = "calendar-outline"; break;
-            case "Sleep":    icon = "moon-outline"; break;
-            case "More":     icon = "ellipsis-horizontal"; break;
+            case "Settings": icon =
+    focused
+      ? "settings"
+      : "settings-outline";
+  break;
             default:         icon = "ellipse";
           }
 
@@ -86,8 +94,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home"     component={HomeScreen} />
       <Tab.Screen name="Schedule" component={ScheduleScreen} />
-      <Tab.Screen name="Sleep"    component={SleepScreen} />
-      <Tab.Screen name="More"     component={MoreStackScreen} />
+      <Tab.Screen name="Settings" component={MoreStackScreen} />
     </Tab.Navigator>
   );
 }
