@@ -1,4 +1,11 @@
-import { View } from "react-native";
+import {
+  View,
+} from "react-native";
+
+import {
+  useEffect,
+  useState,
+} from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -10,8 +17,8 @@ import SettingsScreen from "../screens/SettingsScreen";
 import AppearanceScreen from "../screens/AppearanceScreen";
 import ClimatePreferencesScreen from "../screens/ClimatePreferencesScreen";
 
-// import PairingScreen from "../screens/pairing/PairingScreen";
-// import { storageService } from "../services/storage/storageService";
+import PairingScreen from "../screens/pairing/PairingScreen";
+import { storageService } from "../services/storage/storageService";
 
 const Tab       = createBottomTabNavigator();
 const MoreStack = createNativeStackNavigator();
@@ -118,23 +125,32 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  // ── Pairing disabled for now ──────────────────────────────────────────
-  // const [paired, setPaired] = useState(null);
-  // useEffect(() => { checkPairing(); }, []);
-  // const checkPairing = async () => {
-  //   const isPaired = await storageService.isPaired();
-  //   setPaired(isPaired);
-  // };
-  // const completePairing = async () => {
-  //   await storageService.setPaired(true);
-  //   setPaired(true);
-  // };
-  // if (paired === null) return null;
-  // ─────────────────────────────────────────────────────────────────────
+  // ── Temporary BLE Pairing Enabled ─────────────────────────────────────
+const [
+  paired,
+  setPaired,
+] = useState(
+  false
+);
+
+function completePairing() {
+  setPaired(
+    true
+  );
+}
+// ─────────────────────────────────────────────────────────────────────
 
   return (
-    <NavigationContainer>
+  <NavigationContainer>
+    {paired ? (
       <MainTabs />
-    </NavigationContainer>
-  );
+    ) : (
+      <PairingScreen
+        onPairSuccess={
+          completePairing
+        }
+      />
+    )}
+  </NavigationContainer>
+);
 }

@@ -11,18 +11,39 @@ import {
 
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { mockBluetoothService } from "../../services/bluetooth/mockBluetoothService";
+import { useBedjet } from "../../context/BedjetContext";
 
 const { height } = Dimensions.get("window");
 
 export default function PairingScreen({
   onPairSuccess,
 }) {
+  const {
+  devices,
+  startScan,
+  connectToDevice,
+} = useBedjet();
   const [device, setDevice] =
     useState(null);
 
   const [connecting, setConnecting] =
     useState(false);
+
+    const [debugInfo, setDebugInfo] =
+  useState({
+    bluetoothState:
+      "Unknown",
+    scanning:
+      false,
+    devicesFound:
+      0,
+    foundDevice:
+      "None",
+    rssi:
+      "—",
+    connected:
+      false,
+  });
 
   const slideAnim = useRef(
     new Animated.Value(height)
@@ -37,37 +58,86 @@ export default function PairingScreen({
   ).current;
 
   useEffect(() => {
-    scanForDevice();
+  setDebugInfo(
+    prev => ({
+      ...prev,
+      devicesFound:
+        devices.length,
+    })
+  );
 
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(
-          floatAnim,
-          {
-            toValue: -8,
-            duration: 2200,
-            useNativeDriver: true,
-          }
-        ),
+  const found =
+    devices.find(
+      d =>
+        d.name
+          ?.toUpperCase()
+          .includes(
+            "BEDJET"
+          )
+    );
 
-        Animated.timing(
-          floatAnim,
-          {
-            toValue: 0,
-            duration: 2200,
-            useNativeDriver: true,
-          }
-        ),
-      ])
-    ).start();
-  }, []);
+  if (
+    found
+  ) {
+    setDebugInfo(
+      prev => ({
+        ...prev,
+        foundDevice:
+          found.name,
+        rssi:
+          found.rssi,
+      })
+    );
+  }
+}, [devices]);
 
-  const scanForDevice =
-    async () => {
+useEffect(() => {
+  console.log(
+    "PAIRING SCREEN LOADED"
+  );
+
+  scanForDevice();
+}, []);
+
+  useEffect(() => {
+  if (
+    devices.length === 0 ||
+    device
+  ) {
+    return;
+  }
+
+  const timer =
+    setTimeout(() => {
       const found =
-        await mockBluetoothService.scanForDevice();
+        devices.find(
+          d =>
+            d.name
+              ?.toUpperCase()
+              .includes(
+                "BEDJET"
+              )
+        );
 
-      setDevice(found);
+      if (
+        !found
+      ) {
+        return;
+      }
+
+      setDevice({
+        id:
+          found.id,
+        modelName:
+          found.name ||
+          "BEDJET_V3",
+        signal:
+          found.rssi,
+        image:
+          require(
+            "../../assets/images/bedjet3.png"
+          ),
+      });
 
       Animated.parallel([
         Animated.spring(
@@ -76,7 +146,8 @@ export default function PairingScreen({
             toValue: 0,
             damping: 18,
             stiffness: 120,
-            useNativeDriver: true,
+            useNativeDriver:
+              true,
           }
         ),
 
@@ -84,31 +155,166 @@ export default function PairingScreen({
           fadeAnim,
           {
             toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
+            duration:
+              400,
+            useNativeDriver:
+              true,
           }
         ),
       ]).start();
-    };
+    }, 2500);
+
+  return () =>
+    clearTimeout(
+      timer
+    );
+}, [devices]);
+
+  const scanForDevice =
+  async () => {
+    setDebugInfo(
+      prev => ({
+        ...prev,
+        bluetoothState:
+          "Starting...",
+        scanning:
+          true,
+      })
+    );
+
+    await startScan();
+
+    setDebugInfo(
+      prev => ({
+        ...prev,
+        bluetoothState:
+          "PoweredOn",
+      })
+    );
+  };
 
   const handleConnect =
     async () => {
-      setConnecting(true);
+      setConnecting(
+  true
+);
 
-      await mockBluetoothService.connect();
+const result =
+  await connectToDevice(
+    device.id
+  );
 
-      onPairSuccess();
+if (
+  result.success
+) {
+  onPairSuccess();
+} else {
+  setConnecting(
+    false
+  );
+}
     };
 
   if (!device) {
-    return (
-      <View style={styles.loading}>
-        <Text style={styles.loadingText}>
-          Searching for BedJet...
+  return (
+    <View
+      style={
+        styles.loading
+      }
+    >
+      <Text
+        style={
+          styles.loadingText
+        }
+      >
+        BedJet BLE Diagnostics
+      </Text>
+
+      <View
+        style={{
+          marginTop: 30,
+        }}
+      >
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          Bluetooth:
+          {" "}
+          {
+            debugInfo.bluetoothState
+          }
+        </Text>
+
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          Scanning:
+          {" "}
+          {
+            debugInfo.scanning
+              ? "Yes"
+              : "No"
+          }
+        </Text>
+
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          Devices Found:
+          {" "}
+          {
+            debugInfo.devicesFound
+          }
+        </Text>
+
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          Found Device:
+          {" "}
+          {
+            debugInfo.foundDevice
+          }
+        </Text>
+
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          RSSI:
+          {" "}
+          {
+            debugInfo.rssi
+          }
+        </Text>
+
+        <Text
+          style={{
+            color:
+              "#22E67D",
+            marginTop:
+              20,
+            fontSize:
+              16,
+          }}
+        >
+          Waiting for
+          real BedJet
+          detection...
         </Text>
       </View>
-    );
-  }
+    </View>
+  );
+}
 
   return (
     <View style={styles.container}>

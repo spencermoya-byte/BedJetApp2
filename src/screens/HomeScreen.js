@@ -1,7 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -16,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
 import { useAppearance } from "../context/AppearanceContext";
+import bedjetBLEService from "../services/bedjet/BedjetBLEService";
 
 const { width } = Dimensions.get("window");
 
@@ -29,53 +27,12 @@ const ARC_START = 130;
 const ARC_SPAN  = 280;
 const ARC_END   = ARC_START + ARC_SPAN;
 
-function getModeTemps(
-  isFahrenheit
-) {
+function getModeTemps(isFahrenheit) {
   return {
-    cool: {
-      min:
-        isFahrenheit
-          ? 60
-          : 16,
-      max:
-        isFahrenheit
-          ? 80
-          : 26.7,
-    },
-
-    dry: {
-      min:
-        isFahrenheit
-          ? 60
-          : 16,
-      max:
-        isFahrenheit
-          ? 85
-          : 29.4,
-    },
-
-    turbo: {
-      min:
-        isFahrenheit
-          ? 60
-          : 16,
-      max:
-        isFahrenheit
-          ? 109
-          : 42.8,
-    },
-
-    off: {
-      min:
-        isFahrenheit
-          ? 60
-          : 16,
-      max:
-        isFahrenheit
-          ? 95
-          : 35,
-    },
+    cool:  { min: isFahrenheit ? 60 : 16,   max: isFahrenheit ? 80  : 26.7 },
+    dry:   { min: isFahrenheit ? 60 : 16,   max: isFahrenheit ? 85  : 29.4 },
+    turbo: { min: isFahrenheit ? 60 : 16,   max: isFahrenheit ? 109 : 42.8 },
+    off:   { min: isFahrenheit ? 60 : 16,   max: isFahrenheit ? 95  : 35   },
   };
 }
 
@@ -93,125 +50,79 @@ function knobPos(norm) {
 
 export default function HomeScreen() {
   const {
-  accent,
-  colors,
-  temperatureUnit,
-  reduceVisualNoise,
-  reduceMotion,
-  reduceGlow,
-  calmMode,
-  highContrast,
-} = useAppearance();
+    accent,
+    colors,
+    temperatureUnit,
+    reduceVisualNoise,
+    reduceMotion,
+    reduceGlow,
+    calmMode,
+    highContrast,
+  } = useAppearance();
 
-const isFahrenheit =
-  temperatureUnit === "F" ||
-  temperatureUnit === "f" ||
-  temperatureUnit === "fahrenheit";
+  const isFahrenheit =
+    temperatureUnit === "F" ||
+    temperatureUnit === "f" ||
+    temperatureUnit === "fahrenheit";
 
-const MODE_TEMPS =
-  getModeTemps(
-    isFahrenheit
-  );
+  const MODE_TEMPS = getModeTemps(isFahrenheit);
 
-  const [
-  temperature,
-  setTemperature,
-] = useState(72);
-
-useEffect(() => {
-  setTemperature(
-    (prev) => {
-      const converted =
-        isFahrenheit
-          ? Math.round(
-              (prev * 9) /
-                5 +
-                32
-            )
-          : Number(
-              (
-                ((prev -
-                  32) *
-                  5) /
-                9
-              ).toFixed(1)
-            );
-
-      return converted;
-    }
-  );
-}, [
-  isFahrenheit,
-]);
-
+  const [temperature, setTemperature] = useState(72);
   const [fanSpeed,    setFanSpeed]    = useState(55);
-  const [mode,        setMode]        = useState("cool");
+  const [mode,        setMode]        = useState("off"); // ← default OFF
   const [isDragging,  setIsDragging]  = useState(false);
   const [svgLayout,   setSvgLayout]   = useState(null);
+  const [roomTemp,    setRoomTemp]    = useState(null);  // live from BedJet
+
+  // Debounce timer — prevents flooding BedJet during rapid changes
+  const bleTimer = useRef(null);
+
+  // ── Unit conversion when temperatureUnit changes ────────────────────────
+  useEffect(() => {
+    setTemperature((prev) => {
+      const converted = isFahrenheit
+        ? Math.round((prev * 9) / 5 + 32)
+        : Number((((prev - 32) * 5) / 9).toFixed(1));
+      return Math.max(MODE_TEMPS[mode].min, Math.min(MODE_TEMPS[mode].max, converted));
+    });
+  }, [isFahrenheit]);
+
+  // ── Subscribe to live BedJet status ────────────────────────────────────
+  useEffect(() => {
+    bedjetBLEService.onStatusUpdate((status) => {
+      // Show actual room temp in stats card
+      setRoomTemp(status.actualTemp);
+      // Note: we do NOT sync mode/temp/fan from device back to UI
+      // to avoid fighting the user while they're adjusting controls
+    });
+
+    // Cleanup on unmount
+    return () => bedjetBLEService.onStatusUpdate(null);
+  }, []);
 
   const { min: MIN_TEMP, max: MAX_TEMP } = MODE_TEMPS[mode];
-  const clampedTemp =
-  Math.max(
-    MIN_TEMP,
-    Math.min(
-      MAX_TEMP,
-      temperature
-    )
-  );
-
-const norm =
-  tempToNorm(
-    clampedTemp,
-    MIN_TEMP,
-    MAX_TEMP
-  );
-
-const {
-  x: kx,
-  y: ky,
-} = knobPos(norm);
-
-useEffect(() => {
-  setTemperature(
-    (prev) => {
-      const converted =
-        isFahrenheit
-          ? Math.round(
-              (prev * 9) /
-                5 +
-                32
-            )
-          : Number(
-              (
-                ((prev -
-                  32) *
-                  5) /
-                9
-              ).toFixed(1)
-            );
-
-      return Math.max(
-        MIN_TEMP,
-        Math.min(
-          MAX_TEMP,
-          converted
-        )
-      );
-    }
-  );
-}, [
-  isFahrenheit,
-]);
+  const clampedTemp = Math.max(MIN_TEMP, Math.min(MAX_TEMP, temperature));
+  const norm = tempToNorm(clampedTemp, MIN_TEMP, MAX_TEMP);
+  const { x: kx, y: ky } = knobPos(norm);
 
   const modeAccent =
-  mode === "cool"
-    ? "#1683FF"
-    : mode === "turbo"
-    ? "#F59E0B"
-    : mode === "dry"
-    ? "#38BDF8"
-    : "#6B7280";
+    mode === "cool"  ? "#1683FF" :
+    mode === "turbo" ? "#F59E0B" :
+    mode === "dry"   ? "#38BDF8" : "#6B7280";
 
+  // ── Debounced BLE write ─────────────────────────────────────────────────
+  function scheduleBLEWrite(newMode, newTemp, newFan) {
+    if (bleTimer.current) clearTimeout(bleTimer.current);
+    bleTimer.current = setTimeout(() => {
+      if (newMode === "off") {
+        bedjetBLEService.turnOff();
+      } else {
+        bedjetBLEService.sendCommand(newMode, newTemp, newFan);
+      }
+    }, 400);
+  }
+
+  // ── Arc drag ────────────────────────────────────────────────────────────
   function applyTouch(touchX, touchY) {
     if (!svgLayout) return;
     const dx = touchX - (svgLayout.x + center);
@@ -220,26 +131,48 @@ useEffect(() => {
     if (angleDeg < ARC_START) angleDeg += 360;
     angleDeg = Math.max(ARC_START, Math.min(ARC_END, angleDeg));
     const n = (angleDeg - ARC_START) / ARC_SPAN;
-    setTemperature(normToTemp(n, MIN_TEMP, MAX_TEMP));
+    const newTemp = normToTemp(n, MIN_TEMP, MAX_TEMP);
+    setTemperature(newTemp);
+    if (mode !== "off") scheduleBLEWrite(mode, newTemp, fanSpeed);
   }
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder:  () => true,
-    onPanResponderGrant:    (_, g) => { setIsDragging(true); applyTouch(g.x0, g.y0); },
-    onPanResponderMove:     (_, g) => { applyTouch(g.moveX, g.moveY); },
+    onPanResponderGrant:    (_, g) => { setIsDragging(true); applyTouch(g.x0,    g.y0);    },
+    onPanResponderMove:     (_, g) => {                       applyTouch(g.moveX, g.moveY); },
     onPanResponderRelease:  ()     => setIsDragging(false),
     onPanResponderTerminate:()     => setIsDragging(false),
   });
 
+  // ── +/- buttons ─────────────────────────────────────────────────────────
   function adjustTemp(delta) {
-    setTemperature(t => Math.max(MIN_TEMP, Math.min(MAX_TEMP, t + delta)));
+    setTemperature((t) => {
+      const newTemp = Math.max(MIN_TEMP, Math.min(MAX_TEMP, t + delta));
+      if (mode !== "off") scheduleBLEWrite(mode, newTemp, fanSpeed);
+      return newTemp;
+    });
   }
 
+  // ── Mode switch ─────────────────────────────────────────────────────────
   function switchMode(newMode) {
     const { min, max } = MODE_TEMPS[newMode];
-    setTemperature(t => Math.max(min, Math.min(max, t)));
+    const clampedTemp = Math.max(min, Math.min(max, temperature));
+    setTemperature(clampedTemp);
     setMode(newMode);
+    // Write immediately — no debounce for mode changes
+    if (newMode === "off") {
+      bedjetBLEService.turnOff();
+    } else {
+      bedjetBLEService.sendCommand(newMode, clampedTemp, fanSpeed);
+    }
+  }
+
+  // ── Fan slider ──────────────────────────────────────────────────────────
+  function handleFanChange(value) {
+    const newFan = Math.round(value);
+    setFanSpeed(newFan);
+    if (mode !== "off") scheduleBLEWrite(mode, temperature, newFan);
   }
 
   const modeLabel =
@@ -274,7 +207,6 @@ useEffect(() => {
             <View style={styles.greenDot} />
             <Text style={styles.connected}>BedJet 3 Connected</Text>
           </View>
-          {/* RVN: hide secondary header buttons */}
           {!reduceVisualNoise && (
             <View style={styles.headerButtons}>
               <TouchableOpacity style={styles.headerCircle}>
@@ -327,12 +259,10 @@ useEffect(() => {
 
           <View style={styles.dialContent} pointerEvents="none">
             <MaterialCommunityIcons name={modeIcon} size={42} color={modeAccent} />
-            {/* RVN: hide mode label text */}
             {!reduceVisualNoise && (
               <Text style={[styles.modeLabel, { color: modeAccent }]}>{modeLabel}</Text>
             )}
             <Text style={styles.temp}>{temperature}°</Text>
-            {/* RVN: hide "Target Temperature" sub-label */}
             {!reduceVisualNoise && (
               <Text style={styles.target}>Target Temperature</Text>
             )}
@@ -348,16 +278,17 @@ useEffect(() => {
           </View>
         </View>
 
-        {/* Stats — RVN: show only temp value, hide airflow label */}
+        {/* Stats */}
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
             <Feather name="home" size={22} color="#A4A8B8" />
             <View style={styles.statTextWrap}>
               {!reduceVisualNoise && <Text style={styles.statLabel}>Room Temp</Text>}
-              <Text style={styles.statValue}>71°F</Text>
+              <Text style={styles.statValue}>
+                {roomTemp != null ? `${roomTemp}°F` : "71°F"}
+              </Text>
             </View>
           </View>
-          {/* RVN: hide the airflow stat entirely */}
           {!reduceVisualNoise && (
             <>
               <View style={styles.statDivider} />
@@ -372,7 +303,7 @@ useEffect(() => {
           )}
         </View>
 
-        {/* Modes — RVN: hide label text inside cards */}
+        {/* Modes */}
         {!reduceVisualNoise && <Text style={styles.sectionTitle}>Modes</Text>}
         <View style={styles.modeRow}>
           {modes.map((item) => {
@@ -388,7 +319,6 @@ useEffect(() => {
                 ]}
               >
                 <MaterialCommunityIcons name={item.icon} size={28} color={active ? modeAccent : "#7C8295"} />
-                {/* RVN: hide mode card text labels */}
                 {!reduceVisualNoise && (
                   <Text style={[styles.modeCardText, active && styles.modeCardTextActive]}>
                     {item.label}
@@ -399,7 +329,7 @@ useEffect(() => {
           })}
         </View>
 
-        {/* Fan Speed — RVN: hide title and percentage label */}
+        {/* Fan Speed */}
         <View style={styles.fanCard}>
           {!reduceVisualNoise && (
             <View style={styles.fanHeader}>
@@ -408,11 +338,13 @@ useEffect(() => {
             </View>
           )}
           <Slider
-            minimumValue={0} maximumValue={100} value={fanSpeed}
+            minimumValue={0}
+            maximumValue={100}
+            value={fanSpeed}
             minimumTrackTintColor={modeAccent}
             maximumTrackTintColor="rgba(255,255,255,0.12)"
             thumbTintColor={modeAccent}
-            onValueChange={(v) => setFanSpeed(Math.round(v))}
+            onValueChange={handleFanChange}
           />
           {!reduceVisualNoise && (
             <Text style={styles.fanPercent}>{fanSpeed}%</Text>
@@ -441,15 +373,15 @@ const styles = StyleSheet.create({
   temp:        { color: "#FFF", fontSize: 88, fontWeight: "300", lineHeight: 96 },
   target:      { color: "rgba(255,255,255,0.5)", fontSize: 14 },
 
-  stepRow:    { flexDirection: "row", gap: 42, marginTop: 16 },
-  stepButton: { width: 58, height: 58, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center" },
-  stepText:   { color: "#FFF", fontSize: 32 },
-
   knobHitArea:      { position: "absolute", width: 60, height: 60, justifyContent: "center", alignItems: "center" },
   knobCapsule:      { width: 14, height: 36, borderRadius: 7, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 8 },
   knobCapsuleSolid: { backgroundColor: "#FFFFFF" },
   knobCapsuleActive:{ backgroundColor: "rgba(255,255,255,0.18)", borderWidth: 1, borderColor: "rgba(255,255,255,0.75)" },
   knobShine:        { position: "absolute", top: 2, left: 2, right: 2, height: "45%", borderRadius: 5, backgroundColor: "rgba(255,255,255,0.45)" },
+
+  stepRow:    { flexDirection: "row", gap: 42, marginTop: 16 },
+  stepButton: { width: 58, height: 58, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center" },
+  stepText:   { color: "#FFF", fontSize: 32 },
 
   statsCard:    { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 26, padding: 20, flexDirection: "row", marginBottom: 28 },
   statItem:     { flex: 1, flexDirection: "row", alignItems: "center" },

@@ -13,17 +13,32 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
-    },
+  "supportsTablet": true,
+  "bundleIdentifier": "com.spencermoya.bedjetapp2",
+  "infoPlist": {
+    "ITSAppUsesNonExemptEncryption": false,
+    "NSBluetoothAlwaysUsageDescription": "BedJet uses Bluetooth to find and connect to your BedJet device.",
+    "NSBluetoothPeripheralUsageDescription": "BedJet uses Bluetooth to communicate with your BedJet device."
+  }
+},
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.BedJetApp2"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "08faf938-f2bb-432e-9580-a96b4e7af3e8"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
