@@ -111,16 +111,51 @@ export default function HomeScreen() {
     mode === "dry"   ? "#38BDF8" : "#6B7280";
 
   // ── Debounced BLE write ─────────────────────────────────────────────────
-  function scheduleBLEWrite(newMode, newTemp, newFan) {
-    if (bleTimer.current) clearTimeout(bleTimer.current);
-    bleTimer.current = setTimeout(() => {
-      if (newMode === "off") {
-        bedjetBLEService.turnOff();
-      } else {
-        bedjetBLEService.sendCommand(newMode, newTemp, newFan);
-      }
-    }, 400);
+  function scheduleBLEWrite(
+  newMode,
+  newTemp,
+  newFan
+) {
+  console.log(
+    "SCHEDULE BLE WRITE CALLED",
+    {
+      newMode,
+      newTemp,
+      newFan,
+    }
+  );
+
+  if (
+    bleTimer.current
+  ) {
+    clearTimeout(
+      bleTimer.current
+    );
   }
+
+  bleTimer.current =
+    setTimeout(
+      async () => {
+        console.log(
+          "TIMER TEST FIRING"
+        );
+
+        if (
+          newMode ===
+          "off"
+        ) {
+          bedjetBLEService.turnOff();
+        } else {
+          await bedjetBLEService.setTimer(
+            9,
+            30,
+            0
+          );
+        }
+      },
+      400
+    );
+}
 
   // ── Arc drag ────────────────────────────────────────────────────────────
   function applyTouch(touchX, touchY) {
@@ -164,16 +199,42 @@ export default function HomeScreen() {
     if (newMode === "off") {
       bedjetBLEService.turnOff();
     } else {
-      bedjetBLEService.sendCommand(newMode, clampedTemp, fanSpeed);
-    }
+  bedjetBLEService.testTimer();
+}
   }
 
   // ── Fan slider ──────────────────────────────────────────────────────────
-  function handleFanChange(value) {
-    const newFan = Math.round(value);
-    setFanSpeed(newFan);
-    if (mode !== "off") scheduleBLEWrite(mode, temperature, newFan);
+  function handleFanChange(
+  value
+) {
+  console.log(
+    "HANDLE FAN CHANGE",
+    {
+      value,
+      mode
+    }
+  );
+
+  const newFan =
+    Math.round(
+      value
+    );
+
+  setFanSpeed(
+    newFan
+  );
+
+  if (
+    mode !==
+    "off"
+  ) {
+    scheduleBLEWrite(
+      mode,
+      temperature,
+      newFan
+    );
   }
+}
 
   const modeLabel =
     mode === "off"   ? "OFF"        :

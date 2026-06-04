@@ -146,154 +146,108 @@ class BedjetBLEService {
   }
 
   async turnOff() {
-  await this._write([
-    0x01,
-    MODE_BYTES.off,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-  ]);
+  await this.setMode("off");
 }
 
-  // Convenience — set mode + temp + fan in sequence
-  async sendCommand(
-  modeKey,
-  tempF,
-  fanSpeed
-) {
-  const mode =
-    MODE_BYTES[
-      modeKey
-    ];
-
-  if (
-    mode ===
-    undefined
-  ) {
-    console.warn(
-      "Unknown mode:",
-      modeKey
+async testTimer() {
+  if (!this.connectedDevice) {
+    console.log(
+      "NO CONNECTED DEVICE"
     );
-
     return;
   }
 
-  const temp =
-    Math.max(
-      60,
-      Math.min(
-        109,
-        Math.round(
-          tempF
-        )
-      )
-    );
-
-  const fan =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(
-          fanSpeed
-        )
-      )
-    );
-
   const packet = [
-    0x01,
-    mode,
-    temp - 60,
-    fan,
-    0x00,
-    0x08,
-    0x00,
+    0x09, // timer command?
+    9,    // hours
+    30,   // minutes
+    0     // seconds
   ];
 
   console.log(
-    "FULL BEDJET CMD:",
+    "TEST TIMER PACKET →",
     packet
   );
 
-  await this._write(
-    packet
-  );
+  try {
+    const base64 =
+      Buffer.from(packet)
+        .toString("base64");
+
+    await this.connectedDevice.writeCharacteristicWithResponseForService(
+      SERVICE_UUID,
+      COMMAND_UUID,
+      base64
+    );
+
+    console.log(
+      "PACKET SENT"
+    );
+  } catch (err) {
+    console.log(
+      "WRITE FAILED",
+      err
+    );
+  }
 }
 
-  // ── Existing methods — unchanged ─────────────────────────────────────────
+async startScan(onDeviceFound) {
+  console.log(
+    "START SCAN CALLED"
+  );
 
-  async requestPermissions() {
-    if (Platform.OS === "ios") {
-      return true;
-    }
-
-    if (Platform.OS === "android") {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      ]);
-
-      return Object.values(granted).every(
-        permission => permission === PermissionsAndroid.RESULTS.GRANTED
-      );
-    }
-
-    return false;
+  if (
+    this.isScanning
+  ) {
+    return;
   }
 
-  async startScan(onDeviceFound) {
-    if (this.isScanning) return;
+  this.isScanning =
+    true;
 
-    const hasPermission = await this.requestPermissions();
-    if (!hasPermission) throw new Error("Bluetooth permissions denied");
-
-    const state = await this.manager.state();
-
-    if (state !== "PoweredOn") {
-      console.log("Waiting for Bluetooth...");
-      return new Promise((resolve, reject) => {
-        const subscription = this.manager.onStateChange((newState) => {
-          if (newState === "PoweredOn") {
-            subscription.remove();
-            this.startScan(onDeviceFound);
-            resolve();
-          }
-        }, true);
-      });
-    }
-
-    this.isScanning = true;
-    const foundDevices = new Map();
-
-    this.manager.startDeviceScan(null, { allowDuplicates: false }, (error, device) => {
+  this.manager.startDeviceScan(
+    null,
+    null,
+    (
+      error,
+      device
+    ) => {
       if (error) {
-        console.error("BLE scan error:", error);
-        this.stopScan();
+        console.log(
+          "SCAN ERROR:",
+          error
+        );
+
+        this.isScanning =
+          false;
+
         return;
       }
-      if (!device) return;
 
-      const name = device.name || device.localName || "";
-      const looksLikeBedjet =
-        (name && name.toUpperCase().includes("BEDJET")) ||
-        device.serviceUUIDs?.some(uuid => uuid.toLowerCase().includes("bed0"));
+      if (
+        device?.name ===
+        "BEDJET_V3"
+      ) {
+        console.log(
+          "BLE DEVICE FOUND:",
+          device
+        );
 
-      if (looksLikeBedjet && !foundDevices.has(device.id)) {
-        foundDevices.set(device.id, device);
-        console.log("BLE DEVICE FOUND:", {
-          id: device.id, name: device.name, localName: device.localName,
-          rssi: device.rssi, serviceUUIDs: device.serviceUUIDs,
-          manufacturerData: device.manufacturerData,
+        onDeviceFound?.({
+          id: device.id,
+          name:
+            device.name,
+          rssi:
+            device.rssi,
         });
-        if (onDeviceFound) {
-          onDeviceFound({ id: device.id, name: name || "BedJet", rssi: device.rssi });
-        }
       }
-    });
-  }
+    }
+  );
+
+  console.log(
+    "SCAN STARTED"
+  );
+}
 
   stopScan() {
     this.manager.stopDeviceScan();
@@ -366,6 +320,9 @@ class BedjetBLEService {
     const packet =
       characteristic?.value;
 
+if (!packet) {
+  return;
+}
     if (!packet) {
       return;
     }
@@ -408,11 +365,10 @@ class BedjetBLEService {
 
     // Only compare meaningful bytes
     const ignoredIndexes =
-  [
-    6,
-    7,
-    17,
-  ];
+[
+  7,  // noisy
+  17, // noisy
+];
 
     let changed =
   false;
@@ -480,8 +436,18 @@ for (
   }
 );
 
-      this.connectedDevice = device;
-      return { success: true, device };
+      this.connectedDevice =
+  device;
+
+// Run timer test AFTER connect
+setTimeout(() => {
+  this.testTimer();
+}, 3000);
+
+return {
+  success: true,
+  device,
+};
     } catch (error) {
       console.error("CONNECTION ERROR:", error);
       return { success: false, error };
