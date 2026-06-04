@@ -41,6 +41,7 @@ class BedjetBLEService {
     this.connectedDevice = null;
     this.isScanning      = false;
     this.lastPacket      = null;
+    this.lastBytes       = null;
     this.pendingPacket   = null;
     this.changeTimer     = null;
 
@@ -74,22 +75,53 @@ class BedjetBLEService {
 
   // ── Write a raw packet to the command characteristic ─────────────────────
   async _write(bytes) {
-    if (!this.connectedDevice) {
-      console.warn("BedJet: no device connected");
-      return;
-    }
-    const b64 = Buffer.from(bytes).toString("base64");
-    console.log("BEDJET CMD →", Buffer.from(bytes).toString("hex"), "(" + b64 + ")");
-    try {
+  if (!this.connectedDevice) {
+    console.warn(
+      "BedJet: no device connected"
+    );
+    return;
+  }
+
+  const b64 =
+    Buffer.from(bytes)
+      .toString("base64");
+
+  console.log(
+    "ATTEMPT WRITE →",
+    bytes
+  );
+
+  console.log(
+    "UUID:",
+    COMMAND_UUID
+  );
+
+  console.log(
+    "BASE64:",
+    b64
+  );
+
+  try {
+    const result =
       await this.connectedDevice.writeCharacteristicWithResponseForService(
         SERVICE_UUID,
         COMMAND_UUID,
         b64
       );
-    } catch (error) {
-      console.warn("BEDJET WRITE ERROR:", error);
-    }
+
+    console.log(
+      "WRITE SUCCESS:",
+      result
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "BEDJET WRITE ERROR:",
+      error
+    );
   }
+}
 
   // ── Individual commands (BedJet V3 protocol) ──────────────────────────────
   // Each command is a short independent packet written to 0x2001.
@@ -114,18 +146,81 @@ class BedjetBLEService {
   }
 
   async turnOff() {
-    await this._write([MODE_BYTES.off]);
-  }
+  await this._write([
+    0x01,
+    MODE_BYTES.off,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+  ]);
+}
 
   // Convenience — set mode + temp + fan in sequence
-  async sendCommand(modeKey, tempF, fanSpeed) {
-    await this.setMode(modeKey);
-    // Small delay between packets so BedJet doesn't drop them
-    await new Promise(r => setTimeout(r, 100));
-    await this.setTemperature(tempF);
-    await new Promise(r => setTimeout(r, 100));
-    await this.setFanSpeed(fanSpeed);
+  async sendCommand(
+  modeKey,
+  tempF,
+  fanSpeed
+) {
+  const mode =
+    MODE_BYTES[
+      modeKey
+    ];
+
+  if (
+    mode ===
+    undefined
+  ) {
+    console.warn(
+      "Unknown mode:",
+      modeKey
+    );
+
+    return;
   }
+
+  const temp =
+    Math.max(
+      60,
+      Math.min(
+        109,
+        Math.round(
+          tempF
+        )
+      )
+    );
+
+  const fan =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          fanSpeed
+        )
+      )
+    );
+
+  const packet = [
+    0x01,
+    mode,
+    temp - 60,
+    fan,
+    0x00,
+    0x08,
+    0x00,
+  ];
+
+  console.log(
+    "FULL BEDJET CMD:",
+    packet
+  );
+
+  await this._write(
+    packet
+  );
+}
 
   // ── Existing methods — unchanged ─────────────────────────────────────────
 
@@ -240,7 +335,7 @@ class BedjetBLEService {
         const readResult = await device.readCharacteristicForService(SERVICE_UUID, STATUS_UUID);
         console.log("BEDJET READ:", readResult);
         console.log("BEDJET BASE64 VALUE:", readResult.value);
-        this.lastPacket = readResult.value;
+        this.lastStatus = undefined;
 
         // Dispatch initial status
         if (readResult.value && this._statusCallback) {
@@ -253,48 +348,137 @@ class BedjetBLEService {
 
       // Monitor for ongoing status changes
       device.monitorCharacteristicForService(
-        SERVICE_UUID,
-        STATUS_UUID,
-        (error, characteristic) => {
-          if (error) {
-            console.log("BEDJET MONITOR ERROR:", error);
-            return;
-          }
-
-          const packet = characteristic?.value;
-          if (!packet) return;
-
-          // Dispatch parsed status to HomeScreen
-          if (this._statusCallback) {
-            const status = this._parseStatus(packet);
-            if (status) this._statusCallback(status);
-          }
-
-          if (this.lastPacket === null) {
-            this.lastPacket = packet;
-            return;
-          }
-
-          let diffCount = 0;
-          const minLength = Math.min(packet.length, this.lastPacket.length);
-          for (let i = 0; i < minLength; i++) {
-            if (packet[i] !== this.lastPacket[i]) diffCount++;
-          }
-
-          if (diffCount >= 1) {
-            clearTimeout(this.changeTimer);
-            this.pendingPacket = packet;
-            this.changeTimer = setTimeout(() => {
-              if (this.pendingPacket !== this.lastPacket) {
-                console.log("STATE CHANGED");
-                console.log("OLD:", this.lastPacket);
-                console.log("NEW:", this.pendingPacket);
-                this.lastPacket = this.pendingPacket;
-              }
-            }, 500);
-          }
-        }
+  SERVICE_UUID,
+  STATUS_UUID,
+  (
+    error,
+    characteristic
+  ) => {
+    if (error) {
+      console.log(
+        "BEDJET MONITOR ERROR:",
+        error
       );
+
+      return;
+    }
+
+    const packet =
+      characteristic?.value;
+
+    if (!packet) {
+      return;
+    }
+
+    const bytes =
+      Buffer.from(
+        packet,
+        "base64"
+      );
+
+    // Update UI
+    const status =
+      this._parseStatus(
+        packet
+      );
+
+    if (
+      status &&
+      this._statusCallback
+    ) {
+      this._statusCallback(
+        status
+      );
+    }
+
+    // First packet baseline
+    if (
+      !this.lastBytes
+    ) {
+      this.lastBytes =
+        bytes;
+
+      console.log(
+        "BASELINE:",
+        [...bytes]
+      );
+
+      return;
+    }
+
+    // Only compare meaningful bytes
+    const ignoredIndexes =
+  [
+    6,
+    7,
+    17,
+  ];
+
+    let changed =
+  false;
+
+for (
+  let i = 0;
+  i < bytes.length;
+  i++
+) {
+  if (
+    ignoredIndexes.includes(
+      i
+    )
+  ) {
+    continue;
+  }
+
+  if (
+    bytes[i] !==
+    this.lastBytes[i]
+  ) {
+    changed =
+      true;
+
+    console.log(
+      "BYTE CHANGED:",
+      i,
+      this.lastBytes[i],
+      "→",
+      bytes[i]
+    );
+
+    break;
+  }
+}
+
+    // Ignore heartbeat spam
+    if (
+      !changed
+    ) {
+      return;
+    }
+
+    console.log(
+      "REMOTE STATE CHANGE"
+    );
+
+    console.log(
+      "OLD BYTES:",
+      [...this.lastBytes]
+    );
+
+    console.log(
+      "NEW BYTES:",
+      [...bytes]
+    );
+
+    console.log(
+      "RAW PACKET:",
+      packet
+    );
+
+    this.lastBytes =
+      bytes;
+  }
+);
 
       this.connectedDevice = device;
       return { success: true, device };
