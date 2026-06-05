@@ -69,15 +69,14 @@ export default function HomeScreen() {
 
   const [temperature, setTemperature] = useState(72);
   const [fanSpeed,    setFanSpeed]    = useState(55);
-  const [mode,        setMode]        = useState("off"); // ← default OFF
+  const [mode,        setMode]        = useState("off"); // default OFF — BedJet won't start automatically
   const [isDragging,  setIsDragging]  = useState(false);
   const [svgLayout,   setSvgLayout]   = useState(null);
-  const [roomTemp,    setRoomTemp]    = useState(null);  // live from BedJet
+  const [roomTemp,    setRoomTemp]    = useState(null);
 
-  // Debounce timer — prevents flooding BedJet during rapid changes
   const bleTimer = useRef(null);
 
-  // ── Unit conversion when temperatureUnit changes ────────────────────────
+  // ── Unit conversion ────────────────────────────────────────────────────────
   useEffect(() => {
     setTemperature((prev) => {
       const converted = isFahrenheit
@@ -87,16 +86,12 @@ export default function HomeScreen() {
     });
   }, [isFahrenheit]);
 
-  // ── Subscribe to live BedJet status ────────────────────────────────────
+  // ── Subscribe to BedJet status ─────────────────────────────────────────────
   useEffect(() => {
     bedjetBLEService.onStatusUpdate((status) => {
-      // Show actual room temp in stats card
+      console.log("STATUS UPDATE:", status);
       setRoomTemp(status.actualTemp);
-      // Note: we do NOT sync mode/temp/fan from device back to UI
-      // to avoid fighting the user while they're adjusting controls
     });
-
-    // Cleanup on unmount
     return () => bedjetBLEService.onStatusUpdate(null);
   }, []);
 
@@ -110,54 +105,27 @@ export default function HomeScreen() {
     mode === "turbo" ? "#F59E0B" :
     mode === "dry"   ? "#38BDF8" : "#6B7280";
 
-  // ── Debounced BLE write ─────────────────────────────────────────────────
-  function scheduleBLEWrite(
-  newMode,
-  newTemp,
-  newFan
-) {
-  console.log(
-    "SCHEDULE BLE WRITE CALLED",
-    {
-      newMode,
-      newTemp,
-      newFan,
-    }
-  );
-
-  if (
-    bleTimer.current
-  ) {
-    clearTimeout(
-      bleTimer.current
-    );
+  // ── Debounced BLE write ────────────────────────────────────────────────────
+  function scheduleWrite(fn) {
+    if (bleTimer.current) clearTimeout(bleTimer.current);
+    bleTimer.current = setTimeout(fn, 400);
   }
 
-  bleTimer.current =
-    setTimeout(
-      async () => {
-        console.log(
-          "TIMER TEST FIRING"
-        );
+  // ── Mode switch — immediate write, no debounce ─────────────────────────────
+  function switchMode(newMode) {
+    console.log("SWITCH MODE:", newMode);
+    const { min, max } = MODE_TEMPS[newMode];
+    const clampedTemp = Math.max(min, Math.min(max, temperature));
+    setTemperature(clampedTemp);
+    setMode(newMode);
+    if (newMode === "off") {
+      bedjetBLEService.turnOff();
+    } else {
+      bedjetBLEService.sendCommand(newMode, clampedTemp, fanSpeed);
+    }
+  }
 
-        if (
-          newMode ===
-          "off"
-        ) {
-          bedjetBLEService.turnOff();
-        } else {
-          await bedjetBLEService.setTimer(
-            9,
-            30,
-            0
-          );
-        }
-      },
-      400
-    );
-}
-
-  // ── Arc drag ────────────────────────────────────────────────────────────
+  // ── Arc drag ───────────────────────────────────────────────────────────────
   function applyTouch(touchX, touchY) {
     if (!svgLayout) return;
     const dx = touchX - (svgLayout.x + center);
@@ -168,7 +136,9 @@ export default function HomeScreen() {
     const n = (angleDeg - ARC_START) / ARC_SPAN;
     const newTemp = normToTemp(n, MIN_TEMP, MAX_TEMP);
     setTemperature(newTemp);
-    if (mode !== "off") scheduleBLEWrite(mode, newTemp, fanSpeed);
+    if (mode !== "off") {
+      scheduleWrite(() => bedjetBLEService.setTemperature(newTemp));
+    }
   }
 
   const panResponder = PanResponder.create({
@@ -180,61 +150,26 @@ export default function HomeScreen() {
     onPanResponderTerminate:()     => setIsDragging(false),
   });
 
-  // ── +/- buttons ─────────────────────────────────────────────────────────
+  // ── +/- buttons ────────────────────────────────────────────────────────────
   function adjustTemp(delta) {
     setTemperature((t) => {
       const newTemp = Math.max(MIN_TEMP, Math.min(MAX_TEMP, t + delta));
-      if (mode !== "off") scheduleBLEWrite(mode, newTemp, fanSpeed);
+      if (mode !== "off") {
+        scheduleWrite(() => bedjetBLEService.setTemperature(newTemp));
+      }
       return newTemp;
     });
   }
 
-  // ── Mode switch ─────────────────────────────────────────────────────────
-  function switchMode(newMode) {
-    const { min, max } = MODE_TEMPS[newMode];
-    const clampedTemp = Math.max(min, Math.min(max, temperature));
-    setTemperature(clampedTemp);
-    setMode(newMode);
-    // Write immediately — no debounce for mode changes
-    if (newMode === "off") {
-      bedjetBLEService.turnOff();
-    } else {
-  bedjetBLEService.testTimer();
-}
-  }
-
-  // ── Fan slider ──────────────────────────────────────────────────────────
-  function handleFanChange(
-  value
-) {
-  console.log(
-    "HANDLE FAN CHANGE",
-    {
-      value,
-      mode
+  // ── Fan slider ─────────────────────────────────────────────────────────────
+  function handleFanChange(value) {
+    console.log("HANDLE FAN CHANGE", { value, mode });
+    const newFan = Math.round(value);
+    setFanSpeed(newFan);
+    if (mode !== "off") {
+      scheduleWrite(() => bedjetBLEService.setFanSpeed(newFan));
     }
-  );
-
-  const newFan =
-    Math.round(
-      value
-    );
-
-  setFanSpeed(
-    newFan
-  );
-
-  if (
-    mode !==
-    "off"
-  ) {
-    scheduleBLEWrite(
-      mode,
-      temperature,
-      newFan
-    );
   }
-}
 
   const modeLabel =
     mode === "off"   ? "OFF"        :
